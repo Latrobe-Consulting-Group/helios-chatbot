@@ -4,6 +4,8 @@
 
 Helios is a self-evolving chatbot powered by GPT-4, designed to enhance its understanding over time by conducting background research tasks for unknown queries. It leverages a local knowledge base and various external search tools to provide accurate and informative responses. Additionally, Helios offers a PDF loader feature for enterprise or corporate users to extract and utilize information from PDF documents.
 
+![Screenshot of Helios](./demos/screenshot.png)
+
 Helios is a proof-of-concept: the idea here is to show how powerful a few lines of python and access to wikipedia can be. When you mix in asynchronous processing and an ability to load your own data, you get a rapidly customisable solution that can adapt to many problem domains. To see how we've used this approach with our other enterprise clients to solve real world challenges, get in touch at https://latrobe.group
 
 ## Technologies
