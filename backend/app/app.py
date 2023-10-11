@@ -28,7 +28,7 @@ VERBOSE = False
 chat_model = ChatOpenAI(
     temperature=0.0,
     max_tokens=750,
-    model="gpt-3.5-turbo-0613",
+    model="gpt-4-0613",
 )
 embeddings = OpenAIEmbeddings()
 
@@ -102,9 +102,9 @@ def search_kb(query: str) -> str:
 ## Define Helper Functions
 def add_new_task(description: str) -> Task:
     '''Adds a new task to the task queue.'''
-    print("Adding new background task: {TASK}".format(TASK=description))
     task_id = len(TASKS)
     task = Task(task_id=task_id, description=description)
+    print(f"Adding new task: {description}")
     task.pending()
     TASKS.append(task)
     return task
@@ -113,7 +113,6 @@ def do_tasks():
     '''Runs the task queue.'''
     pending_tasks = [t for t in TASKS if t.get_status() == 'pending']
     for TASK in pending_tasks:
-        print("Running background task: {TASK}".format(TASK=TASK.description))
         run_task(task=TASK)
 
 def run_task(task: Task):

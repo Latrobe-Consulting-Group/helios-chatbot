@@ -40,6 +40,7 @@ class Task(BaseModel):
 
     def done(self, result: str = None) -> None:
         self.status = "done"
+        print(f"Task complete: {self.description}")
         if result is not None:
             self.result = result
 
