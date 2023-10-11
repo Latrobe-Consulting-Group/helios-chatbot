@@ -22,3 +22,28 @@
 .avatar {
     max-width: 50px;
 }
+
+.banner {
+    background-image: url("../img/bg.png");
+    background-repeat: repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.banner-container {
+    display: inline-block;
+    align-self: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 20%;
+    padding-right: 20%;
+    background-color: darkgrey;
+    border-radius: 10px;
+}
+
+.banner-h1 {
+    font-size: 3rem;
+    text-align: center;
+    text-transform: uppercase;
+}

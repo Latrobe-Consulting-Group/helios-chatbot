@@ -1,0 +1,12 @@
+discord.py 
+langchain 
+python-dotenv 
+openai
+wikipedia
+duckduckgo-search
+tiktoken 
+lancedb 
+fastapi 
+uvicorn 
+pydantic
+pandas
