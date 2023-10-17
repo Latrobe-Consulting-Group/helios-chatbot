@@ -16,6 +16,8 @@ if None == os.environ.get('OPENAI_API_KEY'):
 else:
     OAI_TOKEN = os.environ.get('OPENAI_API_KEY')
 
+filename = "./backend/utilities/NAME_OF_PDF.pdf"
+
 ## Set up connection to OpenAI
 embeddings = OpenAIEmbeddings()
 
@@ -40,7 +42,6 @@ else:
 vectorstore = LanceDB(connection=table, embedding=embeddings)
 
 ## Load and split PDF file
-filename = "./backend/utilities/CompassGroupSummary.pdf"
 reader = PdfReader(filename)
 parts = []
 

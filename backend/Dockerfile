@@ -11,18 +11,17 @@ USER appuser
 
 # Set environment variable for Python unbuffered to ensure logs can be streamed
 ENV PYTHONUNBUFFERED=1
-ENV VERSION="0.0.2"
 
 # Create and set working directory
-WORKDIR /app
+WORKDIR /helios
 
 # Copy requirements file and install packages
 # Doing this separately prevents re-installing dependencies if code changes
-COPY requirements.txt /app/
+COPY requirements.txt /helios/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
-COPY . /app/
+COPY . /helios/
 
 # Expose port 8000 for the REST API
 EXPOSE 8000

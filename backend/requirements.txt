@@ -1,4 +1,3 @@
-discord.py 
 langchain 
 python-dotenv 
 openai
