@@ -8,6 +8,9 @@ Helios is a self-evolving chatbot powered by GPT-4, designed to enhance its unde
 
 Helios is a proof-of-concept: the idea here is to show how powerful a few lines of python and access to wikipedia can be. When you mix in asynchronous processing and an ability to load your own data, you get a rapidly customisable solution that can adapt to many problem domains. To see how we've used this approach with our other enterprise clients to solve real world challenges, get in touch at https://latrobe.group
 
+Demo: https://helios.latrobe.group/
+API docs: https://helios-backend.latrobe.group:8000/docs
+
 ## Technologies
 
 - **GPT-4:** Utilized for handling conversations and performing various tasks.
