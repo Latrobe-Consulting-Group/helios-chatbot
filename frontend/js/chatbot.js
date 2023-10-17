@@ -21,7 +21,7 @@ function chatBot() {
             this.scrollChat();
 
             // Make call to backend API
-            response = fetch("http://127.0.0.1:8000/chat/", {
+            response = fetch("http://170.64.165.135:8000/chat/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
