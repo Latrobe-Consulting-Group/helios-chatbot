@@ -28,11 +28,6 @@ if None == os.environ.get('OPENAI_CHAT_MODEL'):
 else:
     OPENAI_CHAT_MODEL = os.environ.get('OPENAI_CHAT_MODEL')
 
-if None == os.environ.get('OPENAI_CHECK_MODEL'):
-    OPENAI_CHECK_MODEL = "gpt-3.5-turbo-0613"
-else:
-    OPENAI_CHECK_MODEL = os.environ.get('OPENAI_CHECK_MODEL')
-
 if None == os.environ.get('OPENAI_TEMPERATURE'):
     OPENAI_TEMPERATURE = 0.1
 else:
@@ -54,11 +49,6 @@ chat_model = ChatOpenAI(
     temperature=OPENAI_TEMPERATURE,
     max_tokens=OPENAI_MAX_TOKENS,
     model=OPENAI_CHAT_MODEL,
-)
-check_model = ChatOpenAI(
-    temperature=OPENAI_TEMPERATURE,
-    max_tokens=OPENAI_MAX_TOKENS,
-    model=OPENAI_CHECK_MODEL,
 )
 embeddings = OpenAIEmbeddings()
 
@@ -100,7 +90,7 @@ else:
     table = db.open_table(table_name)
 vectorstore = LanceDB(connection=table, embedding=embeddings)
 kb_retriever = vectorstore.as_retriever()
-qa = RetrievalQA.from_chain_type(llm=check_model, chain_type="stuff", retriever=kb_retriever, verbose=VERBOSE)
+qa = RetrievalQA.from_chain_type(llm=chat_model, chain_type="stuff", retriever=kb_retriever, verbose=VERBOSE)
 
 def check_search_result(query: str, result: str) -> bool:
     '''Checks if the result of a search is a well informed answer to the query.'''
@@ -108,7 +98,7 @@ def check_search_result(query: str, result: str) -> bool:
         input_variables=["search_query", "search_response"],
         template="Answer only 'Yes' or 'No' - did the following response actually answer the question or include the right information to help the user with the query:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
     )
-    chain = LLMChain(llm=check_model, prompt=prompt)
+    chain = LLMChain(llm=chat_model, prompt=prompt)
     check_response = chain.run(
         {
             "search_query": query,
@@ -122,7 +112,7 @@ def check_search_result(query: str, result: str) -> bool:
             input_variables=["search_query", "search_response"],
             template="Suggest a simple research task an AI could do to improve this response:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
         )
-        chain = LLMChain(llm=check_model, prompt=prompt)
+        chain = LLMChain(llm=chat_model, prompt=prompt)
         add_new_task(description=chain.run({"search_query": query, "search_response": result}))
 
 def search_kb(query: str) -> str:
