@@ -4,7 +4,7 @@ FROM python:3.11.5-slim-bullseye
 # Add metadata labels for better visibility
 LABEL maintainer="jack@latrobe.group"
 
-ARG VERSION="0.0.2"
+ARG VERSION="0.0.3"
 ARG OPENAIKEY=""
 ENV VERSION=$VERSION
 
