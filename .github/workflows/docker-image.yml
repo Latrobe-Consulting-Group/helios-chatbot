@@ -1,0 +1,25 @@
+name: Docker Image CI
+
+on:
+  push:
+    paths: "backend/"
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      working-directory: ./backend/
+      run: docker build . --file Dockerfile --tag registry.digitalocean.com/latrobe-group/helios-chatbot-backend:latest --build-arg VERSION="0.0.3" --build-arg OPENAIKEY=${{ secrets.OPENAI_API_KEY }}
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Log in to DO Container Registry 
+      run: doctl registry login --expiry-seconds 600
+    - name: Push image to registry
+      run: docker push registry.digitalocean.com/latrobe-group/helios-chatbot-backend:latest
