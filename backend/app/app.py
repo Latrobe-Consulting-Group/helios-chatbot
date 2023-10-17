@@ -95,7 +95,7 @@ def check_search_result(query: str, result: str) -> bool:
     else:
         prompt = PromptTemplate(
             input_variables=["search_query", "search_response"],
-            template="Suggest one single and simple research task that could help improve future responses to this query:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
+            template="Suggest a simple research task an AI could do to improve this response:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
         )
         chain = LLMChain(llm=check_model, prompt=prompt)
         add_new_task(description=chain.run({"search_query": query, "search_response": result}))
