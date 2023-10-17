@@ -23,25 +23,50 @@ if None == os.environ.get('OPENAI_API_KEY'):
 else:
     OAI_TOKEN = os.environ.get('OPENAI_API_KEY')
 
+if None == os.environ.get('OPENAI_CHAT_MODEL'):
+    OPENAI_CHAT_MODEL = "gpt-3.5-turbo-0613"
+else:
+    OPENAI_CHAT_MODEL = os.environ.get('OPENAI_CHAT_MODEL')
+
+if None == os.environ.get('OPENAI_CHECK_MODEL'):
+    OPENAI_CHECK_MODEL = "gpt-3.5-turbo-0613"
+else:
+    OPENAI_CHECK_MODEL = os.environ.get('OPENAI_CHECK_MODEL')
+
+if None == os.environ.get('OPENAI_TEMPERATURE'):
+    OPENAI_TEMPERATURE = 0.1
+else:
+    OPENAI_TEMPERATURE = os.environ.get('OPENAI_TEMPERATURE')
+
+if None == os.environ.get('OPENAI_MAX_TOKENS'):
+    OPENAI_MAX_TOKENS = 500
+else:
+    OPENAI_MAX_TOKENS = os.environ.get('OPENAI_MAX_TOKENS')
+
+if None == os.environ.get('HELIOS_URL'):
+    HELIOS_URL = "helios.latrobe.group"
+else:
+    HELIOS_URL = os.environ.get('HELIOS_URL')
+
 ## Set up OpenAI
 VERBOSE = False
 chat_model = ChatOpenAI(
-    temperature=0.0,
-    max_tokens=750,
-    model="gpt-4-0613",
+    temperature=OPENAI_TEMPERATURE,
+    max_tokens=OPENAI_MAX_TOKENS,
+    model=OPENAI_CHAT_MODEL,
 )
 check_model = ChatOpenAI(
-    temperature=0.0,
-    max_tokens=750,
-    model="gpt-3.5-turbo-0613",
+    temperature=OPENAI_TEMPERATURE,
+    max_tokens=OPENAI_MAX_TOKENS,
+    model=OPENAI_CHECK_MODEL,
 )
 embeddings = OpenAIEmbeddings()
 
 ## Set up FastAPI
 helios_app = FastAPI()
 origins = [
-    "http://helios.latrobe.group",
-    "https://helios.latrobe.group",
+    f"http://{HELIOS_URL}",
+    f"https://{HELIOS_URL}",
     "http://localhost",
     "http://localhost:8000",
 ]
@@ -171,7 +196,7 @@ research_tools = [
 agent_kwargs = {
     "extra_prompt_messages": [MessagesPlaceholder(variable_name="memory")],
 }
-memory = ConversationBufferWindowMemory(memory_key="memory", return_messages=True, k=3)
+memory = ConversationBufferWindowMemory(memory_key="memory", return_messages=True, k=4)
 
 ## Init Agents
 chat_agent = initialize_agent(
@@ -196,7 +221,7 @@ async def root(background_tasks: BackgroundTasks):
     '''Returns the status of the bot.'''
     background_tasks.add_task(do_tasks)
     return {"status": "ok",
-            "version": "axebot v{VERSION}".format(VERSION=os.environ.get('VERSION'))}
+            "version": "helios v{VERSION}".format(VERSION=os.environ.get('VERSION'))}
 
 @helios_app.get("/tasks")
 async def get_tasks(background_tasks: BackgroundTasks):
