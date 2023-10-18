@@ -12,7 +12,7 @@ from langchain.document_loaders import WebBaseLoader
 from langchain.agents import Tool, initialize_agent, AgentType
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import LanceDB
-from langchain.chains import RetrievalQA, LLMChain
+from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate, MessagesPlaceholder
 from langchain.memory import ConversationBufferWindowMemory
 from app.task import Task, TaskDescription, TaskList
@@ -133,12 +133,7 @@ def check_search_result(query: str, result: str) -> bool:
     if "YES" in check_response.upper():
         pass
     else:
-        prompt = PromptTemplate(
-            input_variables=["search_query", "search_response"],
-            template="You previously gave this response to a user query - you have an ability to perform research and run python code to find new information to use in future responses - what is a research task or a description of a python programming activity that could improve the response in future:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
-        )
-        chain = LLMChain(llm=chat_model, prompt=prompt)
-        add_new_task(description=chain.run({"search_query": query, "search_response": result}))
+        add_new_task(description=f"Use all of your tools to research this query: {query}")
 
 def search_kb(query: str) -> str:
     compressor = LLMChainExtractor.from_llm(research_model)
@@ -165,7 +160,7 @@ def do_tasks():
 def run_task(task: Task):
     '''Runs a task.'''
     task.running()
-    response = research_agent.run("Use all of your tools to perform detailed research to achieve following task or goal, returned as a compressed knowledge graph: {TASK}".format(TASK=task.description))
+    response = research_agent.run("Use your tools to create a knowledge graph on this topic: {TASK}".format(TASK=task.description))
     vectorstore.add_texts(texts=[response], metadatas=[{"id": task.task_id, "task": task.description}])
     task.done(result=response)
     return task
@@ -244,7 +239,7 @@ chat_agent = initialize_agent(
 
 research_agent = initialize_agent(
     research_tools, 
-    chat_model, 
+    research_model, 
     agent=AgentType.OPENAI_MULTI_FUNCTIONS, 
     handle_parsing_errors=True,
     verbose=VERBOSE)
@@ -297,7 +292,8 @@ class ChatMessage(BaseModel):
 @helios_app.post("/chat/")
 async def chat(message: ChatMessage, background_tasks: BackgroundTasks):
     '''Chats with the bot.'''
-    response = chat_agent.run(f"Use your tools to give a detailed answer to this message - if you can't find the answer, say I don't know: {message.message}")
+    agent_prompt = f"Use your tools to give a detailed answer to this message - if you can't find the answer, say I don't know: {message.message}"
+    response = chat_agent.run(agent_prompt)
     response = response.replace("\n", "<br />").replace("\r", "").replace("\"", "'")
     background_tasks.add_task(check_search_result, message.message, response)
     background_tasks.add_task(do_tasks)
