@@ -7,7 +7,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/5.3.45/css/materialdesignicons.min.css">
 </head>
 <body>
-    <div x-data="{'message' : 'Helios Project' }" class="h-1/5 banner">
+    <div x-data="{'message' : 'Helios Project' }" class="h-1/6 shadow-sm banner">
         <div class="banner-container opacity-80">
             <h1 class="banner-h1" x-text="message"></h1>
         </div>
@@ -15,7 +15,7 @@
     
     <div x-data>
         <div x-data="chatBot()">
-            <div class="flex-1 p:2 sm:p-6 justify-between flex flex-col h-5/6">
+            <div class="flex-1 p:2 sm:p-6 justify-between flex flex-col h-4/6">
                 <div id="messages" class="flex flex-col space-y-4 p-3 overflow-y-auto scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch">
                     <template x-for="(message, key) in messages">
                         <div>

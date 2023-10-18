@@ -4,6 +4,11 @@ from langchain.chat_models import ChatOpenAI
 from langchain.tools import WikipediaQueryRun
 from langchain.utilities import WikipediaAPIWrapper
 from langchain.tools import DuckDuckGoSearchRun
+from langchain.agents.agent_toolkits import create_python_agent
+from langchain.tools.python.tool import PythonREPLTool
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+from langchain.document_loaders import WebBaseLoader
 from langchain.agents import Tool, initialize_agent, AgentType
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import LanceDB
@@ -28,15 +33,30 @@ if None == os.environ.get('OPENAI_CHAT_MODEL'):
 else:
     OPENAI_CHAT_MODEL = os.environ.get('OPENAI_CHAT_MODEL')
 
-if None == os.environ.get('OPENAI_TEMPERATURE'):
-    OPENAI_TEMPERATURE = 0.1
+if None == os.environ.get('OPENAI_CHAT_TEMPERATURE'):
+    OPENAI_CHAT_TEMPERATURE = 0.3
 else:
-    OPENAI_TEMPERATURE = os.environ.get('OPENAI_TEMPERATURE')
+    OPENAI_CHAT_TEMPERATURE = os.environ.get('OPENAI_CHAT_TEMPERATURE')
 
-if None == os.environ.get('OPENAI_MAX_TOKENS'):
-    OPENAI_MAX_TOKENS = 500
+if None == os.environ.get('OPENAI_MAX_CHAT_TOKENS'):
+    OPENAI_MAX_CHAT_TOKENS = 200
 else:
-    OPENAI_MAX_TOKENS = os.environ.get('OPENAI_MAX_TOKENS')
+    OPENAI_MAX_CHAT_TOKENS = os.environ.get('OPENAI_MAX_CHAT_TOKENS')
+
+if None == os.environ.get('OPENAI_RESEARCH_MODEL'):
+    OPENAI_RESEARCH_MODEL = "gpt-3.5-turbo-16k-0613"
+else:
+    OPENAI_RESEARCH_MODEL = os.environ.get('OPENAI_RESEARCH_MODEL')
+
+if None == os.environ.get('OPENAI_RESEARCH_TEMPERATURE'):
+    OPENAI_RESEARCH_TEMPERATURE = 0.1
+else:
+    OPENAI_RESEARCH_TEMPERATURE = os.environ.get('OPENAI_RESEARCH_TEMPERATURE')
+
+if None == os.environ.get('OPENAI_MAX_RESEARCH_TOKENS'):
+    OPENAI_MAX_RESEARCH_TOKENS = 500
+else:
+    OPENAI_MAX_RESEARCH_TOKENS = os.environ.get('OPENAI_MAX_RESEARCH_TOKENS')
 
 if None == os.environ.get('HELIOS_URL'):
     HELIOS_URL = "helios.latrobe.group"
@@ -46,9 +66,14 @@ else:
 ## Set up OpenAI
 VERBOSE = False
 chat_model = ChatOpenAI(
-    temperature=OPENAI_TEMPERATURE,
-    max_tokens=OPENAI_MAX_TOKENS,
+    temperature=OPENAI_CHAT_TEMPERATURE,
+    max_tokens=OPENAI_MAX_CHAT_TOKENS,
     model=OPENAI_CHAT_MODEL,
+)
+research_model = ChatOpenAI(
+    temperature=OPENAI_RESEARCH_TEMPERATURE,
+    max_tokens=OPENAI_MAX_RESEARCH_TOKENS,
+    model=OPENAI_RESEARCH_MODEL,
 )
 embeddings = OpenAIEmbeddings()
 
@@ -62,7 +87,8 @@ origins = [
 ]
 helios_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_credentials=True,
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -90,13 +116,12 @@ else:
     table = db.open_table(table_name)
 vectorstore = LanceDB(connection=table, embedding=embeddings)
 kb_retriever = vectorstore.as_retriever()
-qa = RetrievalQA.from_chain_type(llm=chat_model, chain_type="stuff", retriever=kb_retriever, verbose=VERBOSE)
 
 def check_search_result(query: str, result: str) -> bool:
     '''Checks if the result of a search is a well informed answer to the query.'''
     prompt = PromptTemplate(
         input_variables=["search_query", "search_response"],
-        template="Answer only 'Yes' or 'No' - did the following response actually answer the question or include the right information to help the user with the query:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
+        template="Answer only 'Yes' or 'No' only - did the following response actually answer the question or include the right information to help the user with the query - yes or no:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
     )
     chain = LLMChain(llm=chat_model, prompt=prompt)
     check_response = chain.run(
@@ -110,14 +135,16 @@ def check_search_result(query: str, result: str) -> bool:
     else:
         prompt = PromptTemplate(
             input_variables=["search_query", "search_response"],
-            template="Suggest a simple research task an AI could do to improve this response:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
+            template="You previously gave this response to a user query - you have an ability to perform research and run python code to find new information to use in future responses - what is a research task or a description of a python programming activity that could improve the response in future:\n#####\nQuery: {search_query}\n#####\nResponse:{search_response}",
         )
         chain = LLMChain(llm=chat_model, prompt=prompt)
         add_new_task(description=chain.run({"search_query": query, "search_response": result}))
 
 def search_kb(query: str) -> str:
-    results = qa.run(query)
-    return results
+    compressor = LLMChainExtractor.from_llm(research_model)
+    compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=kb_retriever)
+    compressed_docs = compression_retriever.get_relevant_documents(query)
+    return compressed_docs
 
 ## Define Helper Functions
 def add_new_task(description: str) -> Task:
@@ -138,13 +165,25 @@ def do_tasks():
 def run_task(task: Task):
     '''Runs a task.'''
     task.running()
-    response = research_agent.run("Use all of your tools to perform detailed research to achieve following task or goal: {TASK}".format(TASK=task.description))
+    response = research_agent.run("Use all of your tools to perform detailed research to achieve following task or goal, returned as a compressed knowledge graph: {TASK}".format(TASK=task.description))
     vectorstore.add_texts(texts=[response], metadatas=[{"id": task.task_id, "task": task.description}])
     task.done(result=response)
     return task
-    
+
+def load_web_page(url: str) -> str:
+    '''Loads a web page and returns the text.'''
+    loader = WebBaseLoader(url)
+    loader.requests_kwargs = {'verify':False}
+    data = loader.load()
+    return f"Text from {url}:\n{data}"
 
 ## Set up LangChain Agents
+python_agent = create_python_agent(
+    llm=research_model,
+    tool=PythonREPLTool(),
+    agent_type=AgentType.OPENAI_FUNCTIONS,
+    agent_executor_kwargs={"handle_parsing_errors": True},
+)
 chat_tools = [
     Tool(
         name="knowledgebase-search",
@@ -175,6 +214,11 @@ research_tools = [
         name="web-search",
         func=search.run,
         description="Searches the web using DuckDuckGo for information from web pages. Input must be a list of key words or search terms.",
+    ),
+    Tool(
+        name="run-python-code",
+        func=python_agent.run,
+        description="Sends a task to another agent that will write and run custom python code to achieve a task. Input must be a task or goal that a python programmer could achieve.",
     ),
     Tool(
         name="add-research-task",
